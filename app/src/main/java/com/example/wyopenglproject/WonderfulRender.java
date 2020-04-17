@@ -8,7 +8,6 @@ import android.opengl.EGLContext;
 import android.opengl.GLSurfaceView;
 import android.os.Environment;
 import android.util.Log;
-
 import com.example.wyopenglproject.face.FaceTrack;
 import com.example.wyopenglproject.filter.BeautyFilter;
 import com.example.wyopenglproject.filter.BigEyeFilter;
@@ -66,6 +65,9 @@ public class WonderfulRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     private int width;
     private int height;
 
+    //TODO 测试用
+    private boolean bigEyeEnable = false;
+
     public WonderfulRender(GLSurfaceView surfaceView){
         this.surfaceView = surfaceView;
         //将模型文件拷贝的sd卡
@@ -109,6 +111,9 @@ public class WonderfulRender implements GLSurfaceView.Renderer, SurfaceTexture.O
      * @param gl 1.0 api预留参数
      * @param width
      * @param height
+     *
+     * camera中的宽高等于图像image的宽高，但是和glSurface的宽高不等，
+     * 这是打印的数据 camera width: 640 height: 480  ||  glSurface width: 1080 height: 1692
      */
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
@@ -128,10 +133,12 @@ public class WonderfulRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     /**
      * 会画一帧图像时回调
      * 该方法必须进行绘画操作（返回后会交换渲染缓冲区，不绘制会导致闪屏）
+     * 由测试得出：当模式设置为按需渲染时，surfaceView.requestRender()触发了此方法的回调
      * @param gl
      */
     @Override
     public void onDrawFrame(GL10 gl) {
+        Log.d(TAG, "onDrawFrame: ");
         //设置清屏颜色
         glClearColor(255,0,0,0);
         //清理颜色缓冲区
@@ -178,9 +185,31 @@ public class WonderfulRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     /**========================================*/
 
     //当画布SurfaceTexture有有效数据时回调，告诉GLSurfaceView可以显示了
+    //SurfaceTexture.OnFrameAvailableListener
+    //在前面的代码中，此接口设置给了SurfaceTexture，
+    //而SurfaceTexture又设置给了相机 -> cameraHelper.setPreviewTexture(surfaceTexture);
+    //而SurfaceTexture可以将相机等的数据转换成GL纹理，于是我们猜测当相机获取到数据时他就绘制到surfaceTexture上，
+    //或者里理解为相机把数据交给了surfaceTexture，这样surfaceTexture获取到这帧数据后就回掉onFrameAvailable这个接口，
+    //然后我们在通知GLSurface进行渲染（而GLSurface的渲染应该指的是GPU的操作，可能是滤镜的处理可能是绘制到屏幕上）
+    //经过上面的分析于是我们得出利用openGL渲染相机数据的流程：
+    //1.摄像头获取一帧数据
+    //2.交给SurfaceTexture
+    //3.SurfaceTexture回调onFrameAvailable
+    //4.按需渲染-调用GLSurface.requestRender()
+    //5.GLSurface回调onDrawFrame(GL10 gl)方法
+    //6.从SurfaceTexture中取出纹理并交给openGl
+    //7.openGl对纹理进行采用处理（一般是绘制的FBO上）
+    //8.渲染到屏幕上
+    //实际上从6-8的理解还是有点模糊的，这里面涉及到EGL环境，而EGL如何和纹理联系起来的至今仍没有搞明白
+    //或许可以这样理解，我们知道GLSurface有一套自己的EGL环境，因此对纹理的操作实际上是渲染到了GLSurface内部创建的surface缓存去上了
     @Override
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+        //This method is typically used when the render mode has been set to
+        //{@link #RENDERMODE_WHEN_DIRTY}, so that frames are only rendered on demand.
+        //从注释中可以知道，这就是按需渲染，当有数据时才渲染，而我们在创建surfaceView时设置的就是按需渲染
         surfaceView.requestRender();
+
+        Log.d(TAG, "onFrameAvailable: ");
     }
 
     public void surfaceDestroyed(){
@@ -214,6 +243,7 @@ public class WonderfulRender implements GLSurfaceView.Renderer, SurfaceTexture.O
      * @param enable
      */
     public void enableBigEye(final boolean enable){
+        bigEyeEnable = enable;
         surfaceView.queueEvent(new Runnable() {
             @Override
             public void run() {
