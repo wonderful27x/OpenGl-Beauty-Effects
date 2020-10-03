@@ -14,8 +14,14 @@ import static android.opengl.EGL14.*;
 //OpenGL是一个操作GPU的API，它通过驱动向GPU发送相关指令，控制图形渲染管线状态机的运行状态。
 //但OpenGL需要本地视窗系统进行交互，这就需要一个中间控制层，最好与平台无关。
 //EGL——因此被独立的设计出来，它作为OpenGL ES和本地窗口的桥梁。
+
 //作者：Damon_He
 //链接：https://www.jianshu.com/p/299d23340528
+//来源：简书
+//著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+//作者：eric_la
+//链接：https://www.jianshu.com/p/bc84a293e254
 //来源：简书
 //著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
 public class WonderfulEgl {
@@ -115,6 +121,14 @@ public class WonderfulEgl {
         /**
          * 6.绑定 EGLDisplay,EGLSurface,EGLContext
          */
+        //关联context：
+        //创建了Surface和Context之后，因为可能有多个Surface和Context，所以需要通过eglMakeCurrent绑定Context到Surface，
+        //dpy为对应的Display，draw用于绘制，read用于读，ctx为要绑定的Context，成功是返回EGL_TRUE，失败时返回EGL_FALSE。
+        //因为EGL规范要求eglMakeCurrent实现进行一次刷新，所以这一调用对于基于图块的架构代价很高。
+        //作者：eric_la
+        //链接：https://www.jianshu.com/p/bc84a293e254
+        //来源：简书
+        //著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
         boolean bindOk = eglMakeCurrent(eglDisplay,eglSurface,eglSurface,eglContext);
         if (!bindOk){
             Log.e(TAG, "EGL绑定失败！");

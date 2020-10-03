@@ -16,6 +16,9 @@ import java.nio.ByteBuffer;
  * 屏幕录制模块，Android 4.1.2(API 16)提供了一套编解码API-MediaCodec，将数据放入输入缓冲区，
  * 从输出缓存区就可以取出编码后的数据。另外利用MediaCodec可以创建出一个surface，将图像绘制
  * 在这个surface上，也可以从输出缓冲区得到编码数据，这里的屏幕录制我们使用后者。
+ * 关于MediaCodec的使用下面有两个链接
+ * https://www.cnblogs.com/elesos/p/11777553.html
+ * https://www.jianshu.com/p/30e596112015
  */
 public class WonderfulMediaRecorder {
 
@@ -158,7 +161,7 @@ public class WonderfulMediaRecorder {
         if (endOfStream){
             mediaCodec.signalEndOfInputStream();
         }
-        //缓冲区
+        //缓冲区关键信息
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         int status;
         int index = 0;
@@ -192,7 +195,7 @@ public class WonderfulMediaRecorder {
                     lastTimeUs = bufferInfo.presentationTimeUs;
                     //位置偏移
                     outputBuffer.position(bufferInfo.offset);
-                    //可读写的总长度
+                    //可读写的最大位置
                     outputBuffer.limit(bufferInfo.offset + bufferInfo.size);
                     //写数据
                     mediaMuxer.writeSampleData(index,outputBuffer,bufferInfo);
